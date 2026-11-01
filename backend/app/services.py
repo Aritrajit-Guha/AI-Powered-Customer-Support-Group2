@@ -1,13 +1,14 @@
 """The real work: create a ticket, classify it, log it, change its status."""
+import json
 import time
 from datetime import datetime, timezone
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from . import classifier
-from .config import ALLOWED_TRANSITIONS, CATEGORIES, PRIORITIES, SEVERITIES
-from .models import ActivityLog, Ticket, User
+from . import classifier, rag_bridge
+from .config import ALLOWED_TRANSITIONS, CATEGORIES, PRIORITIES, RETRIEVAL_METRICS_FILE, SEVERITIES
+from .models import ActivityLog, KnowledgeArticle, Ticket, TicketResponse, User
 from .schemas import TicketIn
 
 REQUIRED_KEYS = ["category", "severity", "priority"]
@@ -79,8 +80,51 @@ def create_and_classify(db: Session, data: TicketIn) -> Ticket:
         add_log(db, ticket.ticket_id, f"Classification failed: {exc}", "AI")
 
     db.commit()
+
+    # --- knowledge retrieval + resolution (a failure here must NOT lose the ticket either) ---
+    try:
+        generate_response(db, ticket)
+    except Exception as exc:
+        db.rollback()
+        add_log(db, ticket.ticket_id, f"Resolution generation failed: {exc}", "AI")
+        db.commit()
+
     db.refresh(ticket)
     return ticket
+
+
+def generate_response(db: Session, ticket: Ticket, regenerated: bool = False) -> TicketResponse:
+    """Retrieve articles + generate the answer for a ticket, save it, and log it."""
+    started = time.perf_counter()
+    result = rag_bridge.resolve(db, ticket.subject or "", ticket.description, ticket.category)
+    elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
+
+    if not ticket.category:  # classification failed or returned "Unknown": a human must look at it
+        result["needs_human_review"] = True
+
+    row = TicketResponse(
+        ticket_id=ticket.ticket_id,
+        generated_response=result["response_text"],
+        confidence_score=result["confidence"],
+        sources=result["sources"],
+        steps=result["steps"],
+        articles=result["articles"],
+        trace=result["trace"],
+        mode=result["mode"],
+        needs_human_review=result["needs_human_review"],
+        response_ms=elapsed_ms,
+    )
+    db.add(row)
+    add_log(
+        db, ticket.ticket_id,
+        f"Resolution {'regenerated' if regenerated else 'generated'} "
+        f"({row.mode}, confidence {row.confidence_score:.2f})"
+        + (", needs human review" if row.needs_human_review else ""),
+        "AI",
+    )
+    db.commit()
+    db.refresh(row)
+    return row
 
 
 def change_status(db: Session, ticket: Ticket, new_status: str, performed_by: str):
@@ -117,4 +161,41 @@ def build_stats(db: Session) -> dict:
         "by_priority": _counts(db, Ticket.priority),
         "by_status": _counts(db, Ticket.status),
         "classifier_in_use": classifier.classifier_in_use(),
+    }
+
+
+def build_rag_stats(db: Session) -> dict:
+    total = db.query(func.count(TicketResponse.response_id)).scalar() or 0
+    review = (
+        db.query(func.count(TicketResponse.response_id))
+        .filter(TicketResponse.needs_human_review.is_(True))
+        .scalar()
+        or 0
+    )
+    avg_conf = db.query(func.avg(TicketResponse.confidence_score)).scalar()
+    avg_ms = db.query(func.avg(TicketResponse.response_ms)).scalar()
+    by_cat = dict(
+        db.query(KnowledgeArticle.category, func.count(KnowledgeArticle.article_id))
+        .group_by(KnowledgeArticle.category)
+        .all()
+    )
+    by_mode = dict(db.query(TicketResponse.mode, func.count(TicketResponse.response_id)).group_by(TicketResponse.mode).all())
+    metrics = None
+    try:
+        if RETRIEVAL_METRICS_FILE.exists():
+            metrics = json.loads(RETRIEVAL_METRICS_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        metrics = None
+    return {
+        "kb_articles": db.query(func.count(KnowledgeArticle.article_id)).scalar() or 0,
+        "articles_by_category": by_cat,
+        "responses_generated": total,
+        "tickets_with_response": db.query(func.count(func.distinct(TicketResponse.ticket_id))).scalar() or 0,
+        "needs_human_review": review,
+        "needs_human_review_pct": round(100 * review / total, 1) if total else None,
+        "avg_confidence": round(float(avg_conf), 3) if avg_conf is not None else None,
+        "avg_response_ms": round(float(avg_ms), 2) if avg_ms is not None else None,
+        "by_mode": by_mode,
+        "rag_source": rag_bridge.rag_source(),
+        "retrieval_metrics": metrics,  # e.g. Hit@1 / Hit@3 from Role B's evaluation script
     }

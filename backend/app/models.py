@@ -1,7 +1,7 @@
 """Database tables (the PDF schema + the extra columns we agreed on)."""
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -53,6 +53,7 @@ class Ticket(Base):
         return self.user.email if self.user else None
 
     logs = relationship("ActivityLog", back_populates="ticket", order_by="ActivityLog.log_id")
+    responses = relationship("TicketResponse", back_populates="ticket", order_by="TicketResponse.response_id")
 
 
 class ActivityLog(Base):
@@ -65,3 +66,38 @@ class ActivityLog(Base):
     timestamp = Column(DateTime(timezone=True), default=utcnow)
 
     ticket = relationship("Ticket", back_populates="logs")
+
+
+class KnowledgeArticle(Base):
+    """PDF table: Knowledge_Base. One row per article file in data/kb/."""
+    __tablename__ = "knowledge_base"
+
+    article_id = Column(Integer, primary_key=True)
+    slug = Column(String(150), unique=True, nullable=False, index=True)  # file name without .md
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    category = Column(String(50), index=True)
+    keywords = Column(Text)
+    embedding_id = Column(Integer)  # PDF column; we use article_id as the vector id
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
+class TicketResponse(Base):
+    """PDF table: Ticket_Responses. One row per generated answer (a ticket can have several)."""
+    __tablename__ = "ticket_responses"
+
+    response_id = Column(Integer, primary_key=True)
+    ticket_id = Column(Integer, ForeignKey("tickets.ticket_id"), nullable=False, index=True)
+    generated_response = Column(Text, nullable=False)
+    confidence_score = Column(Float)
+    generated_at = Column(DateTime(timezone=True), default=utcnow)
+    # extras agreed for Milestone 2
+    sources = Column(JSON)   # [{slug, title, score}]
+    steps = Column(JSON)     # ["Step one", ...]
+    articles = Column(JSON)  # everything retrieved (for the UI)
+    trace = Column(JSON)     # [{step, ms}] the 4 RAG steps
+    mode = Column(String(20))  # stub / extractive / llm ...
+    needs_human_review = Column(Boolean, default=False)
+    response_ms = Column(Float)
+
+    ticket = relationship("Ticket", back_populates="responses")

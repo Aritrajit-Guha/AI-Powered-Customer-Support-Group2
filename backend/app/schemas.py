@@ -1,6 +1,6 @@
 """Shapes of the data going in and out of the API (validation happens here)."""
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Any, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
@@ -60,3 +60,83 @@ class LogOut(BaseModel):
     action: str
     performed_by: Optional[str]
     timestamp: datetime
+
+
+# ---------------- Milestone 2 ----------------
+def _match_category(value):
+    from .config import CATEGORIES
+    v = str(value or "").strip().lower().replace("-", " ").replace("_", " ")
+    for c in CATEGORIES:
+        if c.lower() == v:
+            return c
+    raise ValueError(f"category must be one of {CATEGORIES}")
+
+
+class ArticleIn(BaseModel):
+    title: str
+    category: str
+    keywords: Optional[Union[str, list[str]]] = None
+    content: str
+
+    @field_validator("category", mode="before")
+    @classmethod
+    def _cat(cls, v):
+        return _match_category(v)
+
+    @field_validator("title", mode="before")
+    @classmethod
+    def _title(cls, v):
+        v = v.strip() if isinstance(v, str) else v
+        if not v or len(v) < 5:
+            raise ValueError("title must be at least 5 characters")
+        return v
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def _content(cls, v):
+        v = v.strip() if isinstance(v, str) else v
+        if not v or len(v) < 20:
+            raise ValueError("content must be at least 20 characters")
+        return v
+
+    @field_validator("keywords", mode="after")
+    @classmethod
+    def _kw(cls, v):
+        return ", ".join(v) if isinstance(v, list) else v
+
+
+class ArticleSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    article_id: int
+    slug: str
+    title: str
+    category: Optional[str]
+    keywords: Optional[str]
+
+
+class ArticleOut(ArticleSummary):
+    content: str
+    created_at: datetime
+
+
+class ArticleCreated(ArticleOut):
+    indexed: bool = False
+    index_note: Optional[str] = None
+
+
+class ResponseOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    response_id: int
+    ticket_id: int
+    generated_response: str
+    confidence_score: Optional[float]
+    mode: Optional[str]
+    needs_human_review: Optional[bool]
+    response_ms: Optional[float]
+    sources: Optional[list[Any]]
+    steps: Optional[list[Any]]
+    articles: Optional[list[Any]]
+    trace: Optional[list[Any]]
+    generated_at: datetime

@@ -53,7 +53,7 @@ def test_create_ticket_is_classified_and_logged(client):
     assert t["category"] and t["severity"] and t["priority"]
     assert t["processing_ms"] is not None
     history = client.get(f"/tickets/{t['ticket_id']}/history").json()
-    assert len(history) == 2  # created + classified
+    assert len(history) == 3  # created + classified + resolution generated
 
 
 def test_bad_email_and_empty_description_rejected(client):

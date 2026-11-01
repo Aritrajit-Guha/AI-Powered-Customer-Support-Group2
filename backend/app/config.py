@@ -6,6 +6,7 @@ different database, set a DATABASE_URL environment variable - it is
 optional and nothing breaks without it.
 """
 import os
+from pathlib import Path
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
@@ -25,3 +26,8 @@ ALLOWED_TRANSITIONS = {
     "Resolved": ["Closed"],
     "Closed": [],
 }
+
+# --- Milestone 2: knowledge base (the files are the source of truth) ---
+REPO_ROOT = Path(__file__).resolve().parents[2]
+KB_DIR = REPO_ROOT / "data" / "kb"  # data/kb/<category>/<slug>.md
+RETRIEVAL_METRICS_FILE = REPO_ROOT / "data" / "retrieval_metrics.json"  # written by Role B's eval script
