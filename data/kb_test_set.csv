@@ -1,0 +1,21 @@
+ticket_text,expected_category,expected_slug,source
+"What should I do if does not power on?",Hardware,faq-001-what-should-i-do-if-does-not-power-on,pdf
+"What should I do if battery does not charge?",Hardware,faq-011-what-should-i-do-if-battery-does-not-charge,pdf
+"What should I do if external monitor shows no signal?",Hardware,faq-021-what-should-i-do-if-external-monitor-shows-no-signal,pdf
+"What should I do if keyboard does not respond?",Hardware,faq-031-what-should-i-do-if-keyboard-does-not-respond,pdf
+"What should I do if hard drive is not detected?",Hardware,faq-041-what-should-i-do-if-hard-drive-is-not-detected,pdf
+"What should I do if beeps after RAM installation?",Hardware,faq-051-what-should-i-do-if-beeps-after-ram-installation,pdf
+"What should I do if fan is unusually loud?",Hardware,faq-061-what-should-i-do-if-fan-is-unusually-loud,pdf
+"What should I do if Windows is stuck on the loading screen?",Software,faq-151-what-should-i-do-if-windows-is-stuck-on-the-loading-screen,pdf
+"What should I do if an application will not open?",Software,faq-161-what-should-i-do-if-an-application-will-not-open,pdf
+"What should I do if websites do not load in the browser?",Software,faq-171-what-should-i-do-if-websites-do-not-load-in-the-browser,pdf
+"What should I do if email messages are not sending?",Email,faq-181-what-should-i-do-if-email-messages-are-not-sending,pdf
+"What should I do if computer says connected but has no internet?",Network,faq-191-what-should-i-do-if-computer-says-connected-but-has-no-internet,pdf
+"What should I do if VPN client reports authentication failed?",VPN,faq-201-what-should-i-do-if-vpn-client-reports-authentication-failed,pdf
+"What should I do if a file cannot be opened?",Software,faq-211-what-should-i-do-if-a-file-cannot-be-opened,pdf
+"I received a suspicious sign-in alert",Security,generated-suspicious-sign-in-alert,generated
+"I clicked a phishing link",Security,generated-phishing-link-clicked,generated
+"There is a malware alert on my workstation",Security,generated-malware-alert-on-a-workstation,generated
+"Email messages are stuck in the outbox",Email,generated-email-messages-stuck-in-the-outbox,generated
+"I forgot my password",Password Reset,generated-forgotten-password,generated
+"My password reset link expired",Password Reset,generated-password-reset-link-expired,generated
