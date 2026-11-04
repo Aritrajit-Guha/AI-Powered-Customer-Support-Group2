@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 REPO_ROOT = Path(__file__).resolve().parents[1]
 KB_DIR = REPO_ROOT / "data" / "kb"
 METRICS_PATH = REPO_ROOT / "data" / "retrieval_metrics.json"
+INDEX_FAILURES_PATH = REPO_ROOT / "data" / "index_failures.jsonl"
 
 load_dotenv(REPO_ROOT / ".env")
 
@@ -26,3 +27,5 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "customer-support-kb")
 PINECONE_NAMESPACE = os.getenv("PINECONE_NAMESPACE", "customer-support-kb")
+PINECONE_CLOUD = os.getenv("PINECONE_CLOUD", "aws")
+PINECONE_REGION = os.getenv("PINECONE_REGION", "us-east-1")

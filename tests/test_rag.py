@@ -1,4 +1,5 @@
 import csv
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -88,6 +89,29 @@ class TestRag(unittest.TestCase):
         result = retriever.search_kb("VPN timeout", category="Software")
         self.assertEqual(result[0]["slug"], "vpn-timeout")
         self.assertNotIn("filter", index.queries[1])
+
+    @patch("rag.retriever.get_index")
+    @patch("rag.retriever.embed_text")
+    def test_negative_cosine_scores_are_filtered(self, mocked_embed, mocked_index):
+        index = FakeIndex([{"matches": [{"id": "bad", "score": -0.2, "metadata": {}}]}])
+        mocked_embed.return_value = [0.0] * config.EMBEDDING_DIMENSION
+        mocked_index.return_value = index
+        self.assertEqual(retriever.search_kb("unrelated"), [])
+
+    @patch("rag.index_kb.time.sleep")
+    @patch("rag.index_kb.get_index")
+    @patch("rag.index_kb.embed_texts", side_effect=RuntimeError("quota"))
+    @patch("rag.index_kb.iter_articles")
+    def test_failed_batch_is_logged_and_does_not_abort(self, mocked_articles, mocked_embed, mocked_index, mocked_sleep):
+        articles = [{"slug": "failed", "title": "x", "category": "VPN", "keywords": "vpn", "content": "x"}]
+        mocked_articles.return_value = articles
+        mocked_index.return_value = FakeIndex()
+        with tempfile.TemporaryDirectory() as folder:
+            failure_path = Path(folder) / "failures.jsonl"
+            with patch.object(config, "INDEX_FAILURES_PATH", failure_path):
+                self.assertEqual(index_kb.index_kb(), 0)
+            record = json.loads(failure_path.read_text(encoding="utf-8"))
+            self.assertEqual(record["slugs"], ["failed"])
 
     @patch("rag.eval_retrieval.search_kb")
     def test_evaluation_metrics(self, mocked_search):

@@ -30,7 +30,8 @@ def _results(response) -> list[dict]:
     results = []
     for match in matches:
         metadata = _value(match, "metadata", {}) or {}
-        score = max(0.0, min(1.0, float(_value(match, "score", 0.0) or 0.0)))
+        # Preserve Pinecone's raw cosine similarity; negative values are valid.
+        score = float(_value(match, "score", 0.0) or 0.0)
         if score < config.MIN_RELEVANCE:
             continue
         results.append(

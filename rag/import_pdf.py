@@ -252,23 +252,26 @@ def classify_question(question: str) -> str:
     return "Hardware"
 
 
-def _write_article(category: str, slug: str, title: str, keywords: str, body: str) -> None:
+def _write_article(category: str, slug: str, title: str, keywords: str, body: str, overwrite: bool) -> None:
     folder = config.KB_DIR / category.lower().replace(" ", "-")
     folder.mkdir(parents=True, exist_ok=True)
     content = f"---\ntitle: {title}\ncategory: {category}\nkeywords: {keywords}\n---\n{body.strip()}\n"
-    (folder / f"{slug}.md").write_text(content, encoding="utf-8")
+    path = folder / f"{slug}.md"
+    if overwrite or not path.exists():
+        path.write_text(content, encoding="utf-8")
 
 
-def import_pdf(pdf_path: str | Path = DEFAULT_PDF) -> int:
+def import_pdf(pdf_path: str | Path = DEFAULT_PDF, replace: bool = False) -> int:
     pdf_path = Path(pdf_path)
     records = extract_records(pdf_path)
     if len(records) != 300:
         raise ValueError(f"Expected 300 FAQ records, extracted {len(records)}")
 
     config.KB_DIR.mkdir(parents=True, exist_ok=True)
-    for path in config.KB_DIR.rglob("*.md"):
-        if path.name.lower() != "readme.md":
-            path.unlink()
+    if replace:
+        for path in config.KB_DIR.rglob("*.md"):
+            if path.name.lower() != "readme.md":
+                path.unlink()
 
     for ordinal, (number, question, answer) in enumerate(records, start=1):
         category = classify_question(question)
@@ -296,7 +299,7 @@ def import_pdf(pdf_path: str | Path = DEFAULT_PDF) -> int:
                 "",
             )
         )
-        _write_article(category, slug, question, keywords, body)
+        _write_article(category, slug, question, keywords, body, overwrite=replace)
 
     generated = 0
     for category, articles in SUPPLEMENTAL_ARTICLES.items():
@@ -315,10 +318,15 @@ def import_pdf(pdf_path: str | Path = DEFAULT_PDF) -> int:
                     SAFETY_NOTE,
                 )
             )
-            _write_article(category, f"generated-{slugify(title)}", title, keywords, body)
+            _write_article(category, f"generated-{slugify(title)}", title, keywords, body, overwrite=replace)
             generated += 1
     return len(records) + generated
 
 
 if __name__ == "__main__":
-    print(f"Imported {import_pdf()} exact FAQ records into {config.KB_DIR}")
+    import argparse
+    parser = argparse.ArgumentParser(description="Import the FAQ PDF as Markdown articles")
+    parser.add_argument("pdf", nargs="?", default=str(DEFAULT_PDF))
+    parser.add_argument("--replace", action="store_true", help="delete existing articles first")
+    args = parser.parse_args()
+    print(f"Imported {import_pdf(args.pdf, replace=args.replace)} articles into {config.KB_DIR}")
