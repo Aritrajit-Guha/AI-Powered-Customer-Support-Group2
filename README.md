@@ -23,7 +23,7 @@ Set these environment variables locally:
 ```text
 GEMINI_API_KEY=...
 PINECONE_API_KEY=...
-PINECONE_INDEX_NAME=customer-support-kb
+PINECONE_INDEX_NAME=customer-support-kb-rag-vectors
 PINECONE_NAMESPACE=customer-support-kb
 PINECONE_CLOUD=aws
 PINECONE_REGION=us-east-1

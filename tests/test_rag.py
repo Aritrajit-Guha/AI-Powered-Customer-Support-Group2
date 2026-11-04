@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from rag import config, index_kb, retriever
+from rag import config, index_kb, retriever, pinecone_client
 from rag.article_store import iter_articles, parse_article
 from rag.eval_retrieval import evaluate
 
@@ -45,7 +45,38 @@ class FakeIndex:
         return self.responses.pop(0) if self.responses else {"matches": []}
 
 
+class FakePinecone:
+    def __init__(self, indexes=None, dimension=768, metric="cosine"):
+        self.created = []
+        self._indexes = indexes or []
+        self._description = {"dimension": dimension, "metric": metric}
+
+    def list_indexes(self):
+        return type("Indexes", (), {"names": lambda _: self._indexes})()
+
+    def describe_index(self, name):
+        return self._description
+
+    def create_index(self, **kwargs):
+        self.created.append(kwargs)
+        self._indexes.append(kwargs["name"])
+
+    def Index(self, name):
+        return FakeIndex()
+
+
 class TestRag(unittest.TestCase):
+    @patch("rag.pinecone_client.Pinecone")
+    def test_pinecone_index_is_created_and_validated(self, mocked_client):
+        client = FakePinecone()
+        mocked_client.return_value = client
+        pinecone_client.get_index.cache_clear()
+        with patch.object(config, "PINECONE_INDEX_NAME", "test-index"):
+            pinecone_client.get_index()
+        self.assertEqual(client.created[0]["dimension"], 768)
+        self.assertEqual(client.created[0]["metric"], "cosine")
+        pinecone_client.get_index.cache_clear()
+
     def test_article_validation_and_duplicate_slugs(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

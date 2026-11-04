@@ -1,8 +1,8 @@
 {
-  "count": 20,
-  "hit_at_1": 0.95,
-  "hit_at_3": 0.95,
-  "average_latency_ms": 1079.6357200004422,
+  "count": 76,
+  "hit_at_1": 0.9605263157894737,
+  "hit_at_3": 0.9868421052631579,
+  "average_latency_ms": 1049.0461671052847,
   "failures": [
     {
       "ticket_text": "What should I do if beeps after RAM installation?",

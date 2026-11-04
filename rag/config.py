@@ -25,7 +25,7 @@ INDEX_BATCH_DELAY_SECONDS = float(os.getenv("RAG_INDEX_BATCH_DELAY_SECONDS", "8"
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "customer-support-kb")
+PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "customer-support-kb-rag-vectors")
 PINECONE_NAMESPACE = os.getenv("PINECONE_NAMESPACE", "customer-support-kb")
 PINECONE_CLOUD = os.getenv("PINECONE_CLOUD", "aws")
 PINECONE_REGION = os.getenv("PINECONE_REGION", "us-east-1")

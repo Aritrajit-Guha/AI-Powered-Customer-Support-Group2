@@ -49,5 +49,6 @@ python -m rag.index_kb --start 248
 The resume offset must match the last successful `Indexed N/... articles`
 message. The delay is controlled by `RAG_INDEX_BATCH_DELAY_SECONDS` to avoid
 free-tier per-minute limits; the daily Gemini embedding quota still applies.
-Failed batches are recorded in `data/index_failures.jsonl`; deterministic slug
-IDs make retrying a batch idempotent.
+Failed articles are recorded in `data/index_failures.jsonl`. Retry only those
+articles with `python -m rag.index_kb --retry-failures`; deterministic slug IDs
+make retries idempotent even when later batches already succeeded.
