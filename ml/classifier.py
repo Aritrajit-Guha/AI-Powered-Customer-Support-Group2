@@ -1,4 +1,4 @@
-﻿# """Production-facing category classifier for Person 3 and the backend."""
+# """Production-facing category classifier for Person 3 and the backend."""
 
 # from pathlib import Path
 # from typing import Any
@@ -720,7 +720,6 @@ def classify_category(
 ) -> dict[str, Any]:
     """Classify a ticket into a category and subcategory."""
     text = str(text or "").strip()
-
     if not text or len(re.findall(r"\b\w+\b", text)) < MIN_WORDS:
         return {
             "category": "Unknown",
@@ -748,7 +747,6 @@ def classify_category(
     index = int(np.argmax(probabilities))
     category = str(model.classes_[index])
     confidence = float(probabilities[index])
-
     result = {
         "category": category,
         "sub_category": predict_subcategory(text, category),
@@ -970,6 +968,7 @@ def classify(
     ).strip()
 
     result = classify_category(text)
+
     severity, severity_confidence = classify_severity(text)
 
     needs_human_review = (

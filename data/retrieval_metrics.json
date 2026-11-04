@@ -1,0 +1,17 @@
+{
+  "count": 76,
+  "hit_at_1": 0.9605263157894737,
+  "hit_at_3": 0.9868421052631579,
+  "average_latency_ms": 1049.0461671052847,
+  "failures": [
+    {
+      "ticket_text": "What should I do if beeps after RAM installation?",
+      "expected_slug": "faq-051-what-should-i-do-if-beeps-after-ram-installation",
+      "returned_slugs": [
+        "faq-052-what-should-i-do-if-does-not-boot-after-a-ram-upgrade",
+        "faq-008-what-should-i-do-if-emits-beep-codes-during-startup",
+        "faq-140-what-should-i-do-if-system-does-not-pass-post"
+      ]
+    }
+  ]
+}

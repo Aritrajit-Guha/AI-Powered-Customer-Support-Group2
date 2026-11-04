@@ -1,0 +1,77 @@
+ticket_text,expected_category,expected_slug,source
+"What should I do if does not power on?",Hardware,faq-001-what-should-i-do-if-does-not-power-on,pdf
+"What should I do if battery does not charge?",Hardware,faq-011-what-should-i-do-if-battery-does-not-charge,pdf
+"What should I do if external monitor shows no signal?",Hardware,faq-021-what-should-i-do-if-external-monitor-shows-no-signal,pdf
+"What should I do if keyboard does not respond?",Hardware,faq-031-what-should-i-do-if-keyboard-does-not-respond,pdf
+"What should I do if hard drive is not detected?",Hardware,faq-041-what-should-i-do-if-hard-drive-is-not-detected,pdf
+"What should I do if beeps after RAM installation?",Hardware,faq-051-what-should-i-do-if-beeps-after-ram-installation,pdf
+"What should I do if fan is unusually loud?",Hardware,faq-061-what-should-i-do-if-fan-is-unusually-loud,pdf
+"What should I do if Windows is stuck on the loading screen?",Software,faq-151-what-should-i-do-if-windows-is-stuck-on-the-loading-screen,pdf
+"What should I do if an application will not open?",Software,faq-161-what-should-i-do-if-an-application-will-not-open,pdf
+"What should I do if websites do not load in the browser?",Software,faq-171-what-should-i-do-if-websites-do-not-load-in-the-browser,pdf
+"What should I do if email messages are not sending?",Email,faq-181-what-should-i-do-if-email-messages-are-not-sending,pdf
+"What should I do if computer says connected but has no internet?",Network,faq-191-what-should-i-do-if-computer-says-connected-but-has-no-internet,pdf
+"What should I do if VPN client reports authentication failed?",VPN,faq-201-what-should-i-do-if-vpn-client-reports-authentication-failed,pdf
+"What should I do if a file cannot be opened?",Software,faq-211-what-should-i-do-if-a-file-cannot-be-opened,pdf
+"I received a suspicious sign-in alert",Security,generated-suspicious-sign-in-alert,generated
+"I clicked a phishing link",Security,generated-phishing-link-clicked,generated
+"There is a malware alert on my workstation",Security,generated-malware-alert-on-a-workstation,generated
+"Email messages are stuck in the outbox",Email,generated-email-messages-stuck-in-the-outbox,generated
+"I forgot my password",Password Reset,generated-forgotten-password,generated
+"My password reset link expired",Password Reset,generated-password-reset-link-expired,generated
+"The laptop powers on but the screen stays black",Hardware,faq-002-what-should-i-do-if-powers-on-but-the-screen-stays-black,pdf
+"The computer is stuck at the manufacturer logo",Hardware,faq-003-what-should-i-do-if-gets-stuck-at-the-manufacturer-logo,pdf
+"The computer restarts repeatedly during startup",Hardware,faq-004-what-should-i-do-if-restarts-repeatedly-during-startup,pdf
+"The computer shows no boot device",Hardware,faq-005-what-should-i-do-if-shows-a-no-boot-device-message,pdf
+"The computer takes unusually long to start",Hardware,faq-006-what-should-i-do-if-takes-unusually-long-to-start,pdf
+"The computer shuts down unexpectedly",Hardware,faq-007-what-should-i-do-if-shuts-down-unexpectedly,pdf
+"The computer emits beep codes during startup",Hardware,faq-008-what-should-i-do-if-emits-beep-codes-during-startup,pdf
+"The computer does not complete POST",Hardware,faq-009-what-should-i-do-if-does-not-complete-post,pdf
+"Wi-Fi adapter is missing",Network,faq-071-what-should-i-do-if-wi-fi-adapter-is-missing,pdf
+"No Wi-Fi network can be detected",Network,faq-072-what-should-i-do-if-cannot-detect-any-wi-fi-network,pdf
+"Wi-Fi connects but there is no internet",Network,faq-073-what-should-i-do-if-connects-to-wi-fi-but-has-no-internet,pdf
+"Wi-Fi disconnects repeatedly",Network,faq-074-what-should-i-do-if-wi-fi-disconnects-repeatedly,pdf
+"Ethernet is connected but there is no network",Network,faq-076-what-should-i-do-if-ethernet-is-connected-but-there-is-no-network,pdf
+"The network adapter shows a warning symbol",Network,faq-077-what-should-i-do-if-network-adapter-shows-a-warning-symbol,pdf
+"Network speed is slow on one computer",Network,faq-079-what-should-i-do-if-network-speed-is-slow-on-one-computer,pdf
+"Wi-Fi works only near the router",Network,faq-080-what-should-i-do-if-wi-fi-works-only-near-the-router,pdf
+"VPN cannot connect",VPN,faq-081-what-should-i-do-if-vpn-cannot-connect,pdf
+"VPN disconnects when Wi-Fi changes",VPN,faq-082-what-should-i-do-if-vpn-disconnects-when-wi-fi-changes,pdf
+"VPN connects but internal resources are unreachable",VPN,faq-083-what-should-i-do-if-vpn-connects-but-internal-resources-are-unreachable,pdf
+"VPN connection is extremely slow",VPN,faq-084-what-should-i-do-if-vpn-connection-is-extremely-slow,pdf
+"VPN fails after waking from sleep",VPN,faq-085-what-should-i-do-if-vpn-fails-after-waking-from-sleep,pdf
+"VPN works on Ethernet but not Wi-Fi",VPN,faq-086-what-should-i-do-if-vpn-works-on-ethernet-but-not-wi-fi,pdf
+"VPN client reports an adapter error",VPN,faq-087-what-should-i-do-if-vpn-client-reports-an-adapter-error,pdf
+"VPN fails on a public hotspot",VPN,faq-089-what-should-i-do-if-vpn-fails-on-a-public-hotspot,pdf
+"New emails are not arriving",Email,faq-182-what-should-i-do-if-new-emails-are-not-arriving,pdf
+"An email attachment cannot be opened",Email,faq-183-what-should-i-do-if-email-attachments-cannot-be-opened,pdf
+"The mailbox is full",Email,faq-185-what-should-i-do-if-mailbox-is-full,pdf
+"The shared mailbox is missing",Email,faq-188-what-should-i-do-if-shared-mailbox-is-missing,pdf
+"Email synchronization stopped",Email,generated-email-synchronization-stopped,generated
+"The mailbox quota was reached",Email,generated-mailbox-quota-reached,generated
+"The Outlook sign-in prompt repeats",Email,generated-outlook-sign-in-prompt-repeats,generated
+"Email rules moved a message unexpectedly",Email,generated-email-rules-moved-a-message-unexpectedly,generated
+"The system clock resets after shutdown",Password Reset,faq-132-what-should-i-do-if-system-clock-resets-after-shutdown,pdf
+"Saved passwords do not autofill",Password Reset,faq-177-what-should-i-do-if-saved-passwords-do-not-autofill,pdf
+"The email client repeatedly asks for a password",Password Reset,faq-184-what-should-i-do-if-email-client-repeatedly-asks-for-a-password,pdf
+"Network settings reset after reboot",Password Reset,faq-198-what-should-i-do-if-network-settings-reset-after-reboot,pdf
+"Single sign-on repeatedly asks for credentials",Password Reset,faq-209-what-should-i-do-if-single-sign-on-repeatedly-asks-for-credentials,pdf
+"My account is locked after failed attempts",Password Reset,generated-account-locked-after-failed-attempts,generated
+"I need an account unlock request",Password Reset,generated-account-unlock-request,generated
+"The new password does not work",Password Reset,generated-new-password-does-not-work,generated
+"Antivirus reports a potentially unwanted application",Security,faq-221-what-should-i-do-if-antivirus-reports-a-potentially-unwanted-application,pdf
+"Antivirus blocks a trusted business app",Security,faq-222-what-should-i-do-if-antivirus-blocks-a-trusted-business-app,pdf
+"A suspicious login alert was received",Security,faq-224-what-should-i-do-if-suspicious-login-alert-is-received,pdf
+"The computer displays a ransomware note",Security,faq-225-what-should-i-do-if-computer-displays-a-ransomware-note,pdf
+"The browser shows unexpected security pop-ups",Security,faq-226-what-should-i-do-if-browser-shows-unexpected-security-pop-ups,pdf
+"A user received a phishing email",Security,faq-228-what-should-i-do-if-user-receives-a-phishing-email,pdf
+"The computer may be infected with malware",Security,faq-230-what-should-i-do-if-computer-may-be-infected-with-malware,pdf
+"A suspicious browser redirect occurred",Security,generated-suspicious-browser-redirect,generated
+"Windows displays a blue screen",Software,faq-153-what-should-i-do-if-windows-displays-a-blue-screen,pdf
+"Windows restarts without warning",Software,faq-154-what-should-i-do-if-windows-restarts-without-warning,pdf
+"Windows Update is stuck",Software,faq-155-what-should-i-do-if-windows-update-is-stuck,pdf
+"Windows Update fails with an error code",Software,faq-156-what-should-i-do-if-windows-update-fails-with-an-error-code,pdf
+"The user profile cannot be loaded",Software,faq-158-what-should-i-do-if-user-profile-cannot-be-loaded,pdf
+"An application crashes immediately",Software,faq-162-what-should-i-do-if-an-application-crashes-immediately,pdf
+"Software installation fails",Software,faq-163-what-should-i-do-if-software-installation-fails,pdf
+"An application freezes during use",Software,faq-165-what-should-i-do-if-an-application-freezes-during-use,pdf
