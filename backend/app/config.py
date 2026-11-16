@@ -1,5 +1,4 @@
-"""Settings. No .env file and no API keys needed.
-
+"""Settings. 
 The default points to the PostgreSQL started by docker-compose.yml
 (or the local install described in the README). If you ever need a
 different database, set a DATABASE_URL environment variable - it is

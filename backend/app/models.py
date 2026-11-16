@@ -1,4 +1,4 @@
-"""Database tables (the PDF schema + the extra columns we agreed on)."""
+"""Database tables"""
 from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
@@ -91,7 +91,6 @@ class TicketResponse(Base):
     generated_response = Column(Text, nullable=False)
     confidence_score = Column(Float)
     generated_at = Column(DateTime(timezone=True), default=utcnow)
-    # extras agreed for Milestone 2
     sources = Column(JSON)   # [{slug, title, score}]
     steps = Column(JSON)     # ["Step one", ...]
     articles = Column(JSON)  # everything retrieved (for the UI)

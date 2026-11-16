@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 const API = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
-const USE_MOCKS = true; // Change to false when the Milestone 2 backend is available.
+const USE_MOCKS = false; // Change to false when the Milestone 2 backend is available.
 const MOCK_ARTICLES = [
  {slug:'vpn-timeout',title:'VPN Connection Timeout',category:'VPN',score:0.94,content:'1. Check your internet connection.\n2. Restart the VPN client.\n3. Sign in again using your organization credentials.\n4. Contact IT if the timeout continues.'},
  {slug:'wifi-connectivity',title:'Troubleshoot Wi-Fi Connectivity',category:'Network',score:0.87,content:'1. Confirm Wi-Fi is enabled.\n2. Reconnect to the network.\n3. Restart your device if needed.'},
@@ -152,12 +152,17 @@ function App() {
     setKbLoading(true);
     try {
       const params = new URLSearchParams();
-      if (query.trim()) params.set('query', query.trim());
+      if (query.trim()) params.set('q', query.trim());
       if (category !== 'All categories') params.set('category', category);
-      const result = await api(query.trim() ? `/kb/search?${params}` : '/kb/articles');
-      const list = Array.isArray(result) ? result : (result.articles || result.items || []);
+      const result = await api(query.trim() ? `/kb/search?${params}` : '/kb/articles?limit=500&offset=0');
+      const list = Array.isArray(result) ? result : (result.results || result.articles || result.items || []);
       const filtered = category === 'All categories' ? list : list.filter(a => a.category === category);
-      setKbArticles(filtered); setKbSelected(filtered[0] || null);
+      setKbArticles(filtered); if (filtered.length > 0) {
+  const firstArticle = await api(`/kb/articles/${filtered[0].article_id}`);
+  setKbSelected(firstArticle);
+} else {
+  setKbSelected(null);
+}
     } catch (err) { setToast({type:'error',message:err.message || 'Could not load knowledge base.'}); }
     finally { setKbLoading(false); }
   };
@@ -212,15 +217,22 @@ function App() {
         {page === 'Knowledge base' && <>
           <section className="page-heading"><div><div className="eyebrow"><span className="eyebrow-line"/> SUPPORT KNOWLEDGE</div><h1>Knowledge base</h1><p>Search approved troubleshooting articles and resolution guides.</p></div><button className="outline-button" onClick={() => loadKnowledge()}><RefreshCw size={15}/> Refresh</button></section>
           <section className="panel kb-panel"><div className="kb-toolbar"><div className="search-box"><Search size={17}/><input value={kbQuery} onChange={e=>setKbQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&loadKnowledge(kbQuery,kbCategory)} placeholder="Search articles, keywords, or issue..."/></div><select value={kbCategory} onChange={e=>{setKbCategory(e.target.value);loadKnowledge(kbQuery,e.target.value);}}><option>All categories</option>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select><button className="primary-button" onClick={()=>loadKnowledge(kbQuery,kbCategory)}><Search size={15}/> Search</button></div>
-          {kbLoading ? <div className="table-loading"><LoaderCircle className="spin" size={22}/> Loading knowledge articles...</div> : !kbArticles.length ? <Empty title="No matching article" detail="Try another search term or choose a different category."/> : <div className="kb-layout"><div className="kb-list">{kbArticles.map(a=><button key={a.slug || a.title} className={`kb-item ${kbSelected===a?'active':''}`} onClick={()=>setKbSelected(a)}><b>{a.title}</b><span>{a.category}</span></button>)}</div><article className="kb-viewer">{kbSelected ? <><span className="category-pill">{kbSelected.category}</span><h2>{kbSelected.title}</h2><p className="kb-content">{kbSelected.content || kbSelected.body || 'Article content is not available.'}</p></> : <Empty title="Select an article" detail="Choose an article to read its instructions."/>}</article></div>}</section>
+          {kbLoading ? <div className="table-loading"><LoaderCircle className="spin" size={22}/> Loading knowledge articles...</div> : !kbArticles.length ? <Empty title="No matching article" detail="Try another search term or choose a different category."/> : <div className="kb-layout"><div className="kb-list">{kbArticles.map(a=><button key={a.article_id || a.slug || a.title} className={`kb-item ${kbSelected===a?'active':''}`} onClick={async () => {
+  try {
+    const article = await api(`/kb/articles/${a.article_id}`);
+    setKbSelected(article);
+  } catch (err) {
+    setToast({ type: 'error', message: err.message || 'Could not load article.' });
+  }
+}}><b>{a.title}</b><span>{a.category}</span></button>)}</div><article className="kb-viewer">{kbSelected ? <><span className="category-pill">{kbSelected.category}</span><h2>{kbSelected.title}</h2><p className="kb-content">{kbSelected.content || kbSelected.body || 'Article content is not available.'}</p></> : <Empty title="Select an article" detail="Choose an article to read its instructions."/>}</article></div>}</section>
         </>}
         {page === 'RAG metrics' && <>
           <section className="page-heading"><div><div className="eyebrow"><span className="eyebrow-line"/> RETRIEVAL & GENERATION</div><h1>RAG performance</h1><p>Knowledge base coverage and AI resolution quality indicators.</p></div><button className="outline-button" onClick={loadRagStats}><RefreshCw size={15}/> Refresh metrics</button></section>
           {ragStats ? <section className="metric-grid rag-metric-grid">
-            <Metric title="Knowledge articles" value={ragStats.article_count ?? ragStats.articles ?? 0} sub="Indexed KB articles" icon={FileText} tone="blue"/>
+           <Metric title="Knowledge articles" value={ragStats.kb_articles ?? ragStats.article_count ?? ragStats.articles ?? 0} sub="Indexed KB articles" icon={FileText} tone="blue"/>
             <Metric title="Responses generated" value={ragStats.responses_generated ?? 0} sub="Stored AI resolutions" icon={Bot} tone="teal"/>
             <Metric title="Average confidence" value={confidence(ragStats.average_confidence ?? ragStats.avg_confidence)} sub="Across generated responses" icon={Gauge} tone="violet"/>
-            <Metric title="Needs human review" value={`${Number(ragStats.review_percentage ?? ragStats.needs_review_percent ?? 0).toFixed(1)}%`} sub="Responses flagged for review" icon={AlertCircle} tone="amber"/>
+            <Metric title="Needs human review" value={`${Number(ragStats.needs_human_review_pct ?? ragStats.review_percentage ?? ragStats.needs_review_percent ?? 0).toFixed(1)}%`} sub="Responses flagged for review" icon={AlertCircle} tone="amber"/>
             <Metric title="Average response time" value={`${Math.round(ragStats.average_response_time ?? ragStats.avg_response_ms ?? 0)} ms`} sub="Resolution generation latency" icon={Clock3} tone="rose"/>
           </section> : <div className="panel"><div className="table-loading"><LoaderCircle className="spin" size={22}/> Loading RAG metrics...</div></div>}
         </>}
@@ -235,7 +247,7 @@ function App() {
             <div className="rag-trace">{(resolution.trace || []).map((step,i)=><div className="rag-trace-step" key={step.name || step.step || i}><span className="trace-check"><Check size={12}/></span><div><b>{step.name || step.step || `Step ${i+1}`}</b><small>{step.time_ms ?? step.duration_ms ?? 0} ms</small></div></div>)}</div>
             <div className="rag-result-head"><b>Retrieved articles</b><span>{(resolution.articles || []).length} found</span></div>
             {(resolution.articles || []).length ? (resolution.articles || []).map((a,i)=><div className="rag-article" key={a.slug || a.title || i}><div><b>{a.title || a.slug}</b><span className="category-pill">{a.category || 'Knowledge base'}</span></div><strong>{Math.round((a.score ?? a.relevance ?? 0)*100)}%</strong></div>) : <p className="muted">No matching article was retrieved.</p>}
-            <div className="rag-result-head"><b>Generated answer</b><span className={`confidence-pill ${Number(resolution.confidence || 0)>=.8?'green':Number(resolution.confidence||0)>=.6?'amber':'red'}`}>Confidence {confidence(resolution.confidence)}</span></div>
+            <div className="rag-result-head"><b>Generated answer</b><span className={`confidence-pill ${Number(resolution.confidence ?? resolution.confidence_score ?? 0)>=.8?'green':Number(resolution.confidence ?? resolution.confidence_score ?? 0)>=.6?'amber':'red'}`}>Confidence {confidence(resolution.confidence ?? resolution.confidence_score)}</span></div>
             {resolution.needs_human_review && <div className="human-review"><AlertCircle size={16}/> Needs human review — an engineer should verify this response.</div>}
             <div className="generated-reply">{resolution.response_text || (resolution.steps || []).map((x,i)=>`${i+1}. ${x}`).join('\n')}</div>
             <div className="rag-sources"><b>Sources</b><span>{(resolution.sources || []).join(', ') || 'No sources available'}</span></div>

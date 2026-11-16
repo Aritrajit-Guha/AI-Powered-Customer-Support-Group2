@@ -144,7 +144,7 @@ def stats(db: Session = Depends(get_db)):
 
 
 # ===================================================================
-# Milestone 2: knowledge base, retrieval and generated resolutions
+# knowledge base, retrieval and generated resolutions
 # ===================================================================
 @app.get("/kb/articles", response_model=list[ArticleSummary])
 def list_articles(
