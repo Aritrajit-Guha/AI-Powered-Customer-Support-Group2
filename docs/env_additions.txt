@@ -1,0 +1,11 @@
+# Add these lines to your repo-root .env (and to .env.example WITHOUT real values). All are optional.
+# Never commit .env.
+JWT_SECRET=change-this-to-a-long-random-string
+JWT_EXPIRE_MINUTES=480
+ADMIN_EMAIL=admin@supportpilot.dev
+ADMIN_PASSWORD=Admin@12345
+ENGINEER_PASSWORD=Engineer@12345
+# Development shortcut: every request acts as an admin (no login). Keep it false or remove it normally.
+AUTH_DISABLED=false
+# A ticket whose AI confidence is below this always goes to a human
+AUTO_RESOLVE_MIN_CONFIDENCE=0.40

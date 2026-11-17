@@ -138,7 +138,7 @@ def test_unknown_classification_still_gets_a_flagged_response(client, monkeypatc
     client.post("/kb/reindex")
     monkeypatch.setattr(classifier, "classify", lambda s, d, dep: {"category": "Unknown", "severity": "Unknown", "priority": "P3"})
     t = client.post("/tickets", json=TICKET).json()
-    assert t["status"] == "Open"  # not classified
+    assert t["status"] == "Escalated"  # not classified -> a human takes over
     body = client.get(f"/tickets/{t['ticket_id']}/response").json()
     assert body["needs_human_review"] is True and body["sources"]  # still searched all categories
 
@@ -148,7 +148,7 @@ def test_generation_failure_keeps_the_ticket(client, monkeypatch):
         raise RuntimeError("model exploded")
     monkeypatch.setattr(rag_bridge, "resolve", boom)
     r = client.post("/tickets", json=TICKET)
-    assert r.status_code == 201 and r.json()["status"] == "Classified"
+    assert r.status_code == 201 and r.json()["status"] == "Escalated"  # nothing automatic worked -> human
     tid = r.json()["ticket_id"]
     assert client.get(f"/tickets/{tid}/response").status_code == 404
     assert any("Resolution generation failed" in h["action"] for h in client.get(f"/tickets/{tid}/history").json())
