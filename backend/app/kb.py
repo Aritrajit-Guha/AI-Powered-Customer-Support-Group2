@@ -1,10 +1,9 @@
 """Knowledge base files  <->  database.
 
-The Markdown files in data/kb/<category>/<slug>.md are the source of truth
-(Role B writes and indexes them). This module copies them into the
-Knowledge_Base table so the API can list and search them.
+The Markdown files in data/kb/<category>/<slug>.md are the source of truth.
+This module copies them into the Knowledge_Base table so the API can list and search them.
 
-Article format (agreed with Role B):
+Article format:
 
     ---
     title: VPN connection timed out

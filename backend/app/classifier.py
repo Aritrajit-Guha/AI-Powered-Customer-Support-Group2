@@ -1,6 +1,6 @@
 """The bridge between the backend and the AI models.
 
-Contract (agreed by all 4 members):
+Sample Contract:
 
     classify(subject, description, department) -> {
         "category": "VPN",
@@ -12,15 +12,15 @@ Contract (agreed by all 4 members):
     }
 
 HOW IT WORKS
-- If the team has pushed  ml/classifier.py  (Person 3's real function),
+- If   ml/classifier.py present ,
   the backend uses it automatically - no code change needed here.
 - Until then, a simple keyword-based STUB below is used, so the whole
-  backend, tests and Streamlit UI work today.
+  backend, tests and UI work today.
 """
 import sys
 from pathlib import Path
 
-# Make the repo root importable so  `import ml.classifier`  works.
+# Repo root importable so  `import ml.classifier`  works.
 _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.append(str(_ROOT))

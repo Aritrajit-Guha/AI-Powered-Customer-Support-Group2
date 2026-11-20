@@ -71,7 +71,9 @@ class TestRag(unittest.TestCase):
         client = FakePinecone()
         mocked_client.return_value = client
         pinecone_client.get_index.cache_clear()
-        with patch.object(config, "PINECONE_INDEX_NAME", "test-index"):
+        #with patch.object(config, "PINECONE_INDEX_NAME", "test-index"):
+        with patch.object(config, "PINECONE_API_KEY", "test-api-key"), \
+            patch.object(config, "PINECONE_INDEX_NAME", "test-index"):
             pinecone_client.get_index()
         self.assertEqual(client.created[0]["dimension"], 768)
         self.assertEqual(client.created[0]["metric"], "cosine")

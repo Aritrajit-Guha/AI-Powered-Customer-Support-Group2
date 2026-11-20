@@ -48,12 +48,12 @@ def test_create_ticket_is_classified_and_logged(client):
     r = client.post("/tickets", json=GOOD)
     assert r.status_code == 201
     t = r.json()
-    assert t["status"] == "Classified"
+    assert t["status"] in ("Awaiting User", "Escalated")  # the AI answer was sent, or a human takes over
     assert t["ticket_code"].startswith("T-")
     assert t["category"] and t["severity"] and t["priority"]
     assert t["processing_ms"] is not None
     history = client.get(f"/tickets/{t['ticket_id']}/history").json()
-    assert len(history) == 3  # created + classified + resolution generated
+    assert len(history) >= 3  # created + classified + resolution generated (+ escalation steps)
 
 
 def test_bad_email_and_empty_description_rejected(client):
@@ -77,7 +77,7 @@ def test_status_lifecycle_and_invalid_jump(client):
 
 def test_filters_and_not_found(client):
     client.post("/tickets", json=GOOD)
-    assert len(client.get("/tickets", params={"status": "Classified"}).json()) == 1
+    assert len(client.get("/tickets", params={"status": "Escalated"}).json()) == 1
     assert client.get("/tickets", params={"status": "Closed"}).json() == []
     assert client.get("/tickets/9999").status_code == 404
 

@@ -1,6 +1,6 @@
 """Bridge between the backend and the retrieval / generation code of Roles B and C.
 
-Contracts (agreed by the whole team):
+Contracts format:
 
     rag.retriever.search_kb(query, category=None, top_k=3)
         -> [{"slug", "title", "category", "score", "content"}]
@@ -11,9 +11,9 @@ Contracts (agreed by the whole team):
 
 HOW IT WORKS
 - If rag/retriever.py and rag/pipeline.py exist in the repo, they are used
-  automatically (same idea as ml/classifier.py in Milestone 1).
+  automatically.
 - Until then, a simple built-in keyword search over the Knowledge_Base table
-  answers, so the whole backend, the tests and the UI work today.
+  answers, so the whole backend, the tests and the UI works.
   Its labels are placeholders: it is NOT the real retrieval or generation.
 """
 import importlib
@@ -191,7 +191,7 @@ def _fallback_resolve(db: Session, subject: str, description: str, category) -> 
 
 
 def _normalize(raw) -> dict:
-    """Make the pipeline output safe to store, whatever small differences it has."""
+    """To make the pipeline output safe to store, whatever small differences it has."""
     if not isinstance(raw, dict):
         raise ValueError("rag.pipeline.resolve must return a dict")
     text = raw.get("response_text")

@@ -6,16 +6,16 @@ from datetime import datetime, timezone
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from . import classifier, rag_bridge
+from . import agent_bridge, classifier, hooks, rag_bridge
 from .config import ALLOWED_TRANSITIONS, CATEGORIES, PRIORITIES, RETRIEVAL_METRICS_FILE, SEVERITIES
-from .models import ActivityLog, KnowledgeArticle, Ticket, TicketResponse, User
+from .models import ActivityLog, Escalation, Feedback, KnowledgeArticle, Ticket, TicketResponse, User
 from .schemas import TicketIn
 
 REQUIRED_KEYS = ["category", "severity", "priority"]
 
 
 def add_log(db: Session, ticket_id: int, action: str, performed_by: str = "system"):
-    db.add(ActivityLog(ticket_id=ticket_id, action=action, performed_by=performed_by))
+    db.add(ActivityLog(ticket_id=ticket_id, action=str(action)[:500], performed_by=str(performed_by)[:100]))
 
 
 def get_or_create_user(db: Session, email: str, department: str, name: str | None) -> User:
@@ -46,6 +46,7 @@ def create_and_classify(db: Session, data: TicketIn) -> Ticket:
     ticket.ticket_code = f"T-{datetime.now(timezone.utc).year}-{ticket.ticket_id:04d}"
     add_log(db, ticket.ticket_id, f"Ticket created via {data.source}", f"user:{user.email}")
     db.commit()
+    hooks.fire_notify("ticket_received", ticket.ticket_id, ticket_code=ticket.ticket_code, email=user.email)
 
     # --- classification (a failure here must NOT lose the ticket) ---
     try:
@@ -81,38 +82,36 @@ def create_and_classify(db: Session, data: TicketIn) -> Ticket:
 
     db.commit()
 
-    # --- knowledge retrieval + resolution (a failure here must NOT lose the ticket either) ---
+    # --- agents + decision: AI answer for the user, or escalation to a human team ---
     try:
-        generate_response(db, ticket)
-    except Exception as exc:
+        from . import workflow  # imported here to avoid a circular import
+
+        workflow.run_resolution_flow(db, ticket)
+    except Exception as exc:  # the ticket must never be lost or left half-done
         db.rollback()
-        add_log(db, ticket.ticket_id, f"Resolution generation failed: {exc}", "AI")
+        add_log(db, ticket.ticket_id, f"Automation flow failed: {exc}", "system")
         db.commit()
 
     db.refresh(ticket)
     return ticket
 
 
-def generate_response(db: Session, ticket: Ticket, regenerated: bool = False) -> TicketResponse:
-    """Retrieve articles + generate the answer for a ticket, save it, and log it."""
-    started = time.perf_counter()
-    result = rag_bridge.resolve(db, ticket.subject or "", ticket.description, ticket.category)
-    elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
-
+def save_response(db: Session, ticket: Ticket, resolution: dict, regenerated: bool = False,
+                  elapsed_ms=None) -> TicketResponse:
+    """Store one generated answer (and log it)."""
     if not ticket.category:  # classification failed or returned "Unknown": a human must look at it
-        result["needs_human_review"] = True
-
+        resolution["needs_human_review"] = True
     row = TicketResponse(
         ticket_id=ticket.ticket_id,
-        generated_response=result["response_text"],
-        confidence_score=result["confidence"],
-        sources=result["sources"],
-        steps=result["steps"],
-        articles=result["articles"],
-        trace=result["trace"],
-        mode=result["mode"],
-        needs_human_review=result["needs_human_review"],
-        response_ms=elapsed_ms,
+        generated_response=resolution["response_text"],
+        confidence_score=resolution["confidence"],
+        sources=resolution["sources"],
+        steps=resolution["steps"],
+        articles=resolution["articles"],
+        trace=resolution["trace"],
+        mode=resolution["mode"],
+        needs_human_review=resolution["needs_human_review"],
+        response_ms=elapsed_ms if elapsed_ms is not None else resolution.get("response_ms"),
     )
     db.add(row)
     add_log(
@@ -122,12 +121,25 @@ def generate_response(db: Session, ticket: Ticket, regenerated: bool = False) ->
         + (", needs human review" if row.needs_human_review else ""),
         "AI",
     )
+    db.flush()
+    return row
+
+
+def generate_response(db: Session, ticket: Ticket, regenerated: bool = False) -> TicketResponse:
+    """Run the agents again for an existing ticket and save the new answer (the ticket status is not changed)."""
+    from . import workflow
+
+    started = time.perf_counter()
+    result = agent_bridge.run(db, ticket)
+    elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
+    row = save_response(db, ticket, result["resolution"], regenerated, elapsed_ms)
+    workflow.save_agent_runs(db, ticket, result["agent_trace"])
     db.commit()
     db.refresh(row)
     return row
 
 
-def change_status(db: Session, ticket: Ticket, new_status: str, performed_by: str):
+def change_status(db: Session, ticket: Ticket, new_status: str, performed_by: str, notify: bool = True):
     allowed = ALLOWED_TRANSITIONS.get(ticket.status, [])
     if new_status not in allowed:
         raise ValueError(
@@ -135,10 +147,31 @@ def change_status(db: Session, ticket: Ticket, new_status: str, performed_by: st
             f"Allowed next status: {allowed or 'none (ticket is final)'}"
         )
     old = ticket.status
+    now = datetime.now(timezone.utc)
     ticket.status = new_status
+    if new_status == "Resolved":
+        ticket.resolved_at = now
+    elif new_status == "Closed":
+        ticket.closed_at = now
+    # keep the escalation in step with the ticket
+    esc = (
+        db.query(Escalation).filter(Escalation.ticket_id == ticket.ticket_id)
+        .order_by(Escalation.escalation_id.desc()).first()
+    )
+    if esc:
+        if new_status == "In Progress" and esc.status != "Resolved":
+            esc.status = "In Progress"
+            esc.accepted_at = esc.accepted_at or now
+        elif new_status == "Resolved" and esc.status != "Resolved":
+            esc.status = "Resolved"
+            esc.resolved_at = now
     add_log(db, ticket.ticket_id, f"Status changed: {old} -> {new_status}", performed_by)
     db.commit()
     db.refresh(ticket)
+    if notify:
+        event = {"Resolved": "resolved", "Closed": "closed"}.get(new_status, "status_changed")
+        hooks.fire_notify(event, ticket.ticket_id, old_status=old, new_status=new_status)
+        hooks.fire_jira_sync(ticket.ticket_id)
     return ticket
 
 
@@ -161,6 +194,9 @@ def build_stats(db: Session) -> dict:
         "by_priority": _counts(db, Ticket.priority),
         "by_status": _counts(db, Ticket.status),
         "classifier_in_use": classifier.classifier_in_use(),
+        "escalations": _escalation_summary(db),
+        "feedback": _feedback_summary(db),
+        "integrations": {**hooks.status(), "agents": agent_bridge.source()},
     }
 
 
@@ -198,4 +234,39 @@ def build_rag_stats(db: Session) -> dict:
         "by_mode": by_mode,
         "rag_source": rag_bridge.rag_source(),
         "retrieval_metrics": metrics,  # e.g. Hit@1 / Hit@3 from Role B's evaluation script
+    }
+
+
+def _escalation_summary(db: Session) -> dict:
+    now = datetime.now(timezone.utc)
+    open_q = db.query(Escalation).filter(Escalation.status.in_(["Open", "In Progress"]))
+    breached = 0
+    for e in open_q.all():
+        due = e.due_at
+        if due is not None:
+            if due.tzinfo is None:
+                due = due.replace(tzinfo=timezone.utc)
+            breached += 1 if due < now else 0
+    return {
+        "total": db.query(func.count(Escalation.escalation_id)).scalar() or 0,
+        "open": open_q.count(),
+        "unassigned": open_q.filter(Escalation.assigned_to.is_(None)).count(),
+        "sla_breached": breached,
+        "by_team": dict(db.query(Escalation.assigned_team, func.count(Escalation.escalation_id))
+                        .group_by(Escalation.assigned_team).all()),
+    }
+
+
+def _feedback_summary(db: Session) -> dict:
+    total = db.query(func.count(Feedback.feedback_id)).scalar() or 0
+    resolved = db.query(func.count(Feedback.feedback_id)).filter(Feedback.is_resolved.is_(True)).scalar() or 0
+    rated = db.query(func.count(Feedback.feedback_id)).filter(Feedback.rating.isnot(None)).scalar() or 0
+    happy = db.query(func.count(Feedback.feedback_id)).filter(Feedback.rating >= 4).scalar() or 0
+    avg = db.query(func.avg(Feedback.rating)).scalar()
+    return {
+        "responses": total,
+        "fixed_issue": resolved,
+        "fixed_issue_pct": round(100 * resolved / total, 1) if total else None,
+        "avg_rating": round(float(avg), 2) if avg is not None else None,
+        "satisfaction_pct": round(100 * happy / rated, 1) if rated else None,  # share of ratings 4 or 5
     }

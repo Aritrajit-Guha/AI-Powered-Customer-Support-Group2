@@ -52,3 +52,79 @@ free-tier per-minute limits; the daily Gemini embedding quota still applies.
 Failed articles are recorded in `data/index_failures.jsonl`. Retry only those
 articles with `python -m rag.index_kb --retry-failures`; deterministic slug IDs
 make retries idempotent even when later batches already succeeded.
+
+# Person C resolution generation flow
+
+The resolution pipeline is implemented in `rag/pipeline.py`.
+
+The public interface is:
+
+`resolve(subject, description, category)`
+
+The pipeline follows four stages:
+
+1. **Analyze ticket:** Combines the subject, description, and category into a retrieval query. It removes common greetings and signatures.
+2. **Retrieve articles:** Calls Person B's `search_kb(query, category, top_k=3)` interface to retrieve relevant knowledge-base articles.
+3. **Add context:** Uses the best retrieved article as the context for response generation.
+4. **Generate response:** Produces a structured support response using only the retrieved article's instructions.
+
+## Confidence calculation
+
+The pipeline calculates confidence using three factors:
+
+- Top article relevance score (50%).
+- Category match (30%).
+- Score gap between the top two articles (20%).
+
+Formula:
+
+`confidence = (0.50 × top_score) + (0.30 × category_match) + (0.20 × score_gap)`
+
+All factors are bounded between 0 and 1.
+
+If only one article is returned, its second score is treated as 0.
+
+## Human review and safety
+
+Human review is required when:
+
+- No acceptable article is retrieved.
+- The best article contains no numbered troubleshooting steps.
+- Confidence is below `CONFIDENCE_THRESHOLD`.
+- The ticket category is missing or `Unknown`.
+
+When human review is required, the pipeline returns a safe message asking a support engineer to review the ticket. It does not invent troubleshooting steps.
+
+## Response structure
+
+The default response includes:
+
+- A greeting.
+- The retrieved article title.
+- Numbered troubleshooting steps.
+- Escalation instructions, when available.
+- Safety notes, when available.
+- Source article title.
+
+The pipeline returns `response_text`, `steps`, `sources`, `articles`, `confidence`, `mode`, `needs_human_review`, `trace`, and `response_ms`.
+
+## Execution trace
+
+The pipeline records the execution time of four stages:
+
+- `analyze_ticket`
+- `retrieve_articles`
+- `add_context`
+- `generate_response`
+
+The total execution time is returned as `response_ms`.
+
+## Response generation mode
+
+The current implementation uses the default article-based response generation mode. It does not require a Gemini generation API call. Retrieval still requires Gemini embeddings and Pinecone credentials.
+
+## Tests
+
+Run the Role B and Role C tests:
+
+`python -m pytest tests/test_rag.py tests/test_resolution_pipeline.py -v`
