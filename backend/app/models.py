@@ -227,3 +227,19 @@ class AgentRun(Base):
     confidence = Column(Float)
     output = Column(JSON)
     created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
+class RecurringIssue(Base):
+    """Aggregated issue signature written by Role B's scheduled detector."""
+    __tablename__ = "recurring_issues"
+
+    recurring_issue_id = Column(Integer, primary_key=True)
+    signature = Column(String(255), unique=True, nullable=False, index=True)
+    category = Column(String(50), index=True)
+    assigned_team = Column(String(100))
+    occurrence_count = Column(Integer, default=0)
+    first_seen = Column(DateTime(timezone=True))
+    last_seen = Column(DateTime(timezone=True))
+    sample_ticket_ids = Column(JSON)
+    status = Column(String(20), default="Open")
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
