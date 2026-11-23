@@ -45,7 +45,9 @@ def save_agent_runs(db: Session, ticket: Ticket, agent_trace: list):
             status=str(item.get("status") or "ok")[:20],
             duration_ms=float(ms) if isinstance(ms, (int, float)) else None,
             confidence=float(item["confidence"]) if isinstance(item.get("confidence"), (int, float)) else None,
-            output=item,
+            # Role B can provide a structured output for each agent. Keep that
+            # object directly inspectable instead of persisting only its summary.
+            output=item.get("output") or item,
         ))
 
 

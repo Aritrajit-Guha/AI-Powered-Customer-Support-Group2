@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from agents.metrics import summarize
-from agents.orchestrator import run
+from agents.orchestrator import _safe_resolution, run
 from agents.validation import validate
 
 
@@ -38,6 +38,8 @@ def test_complex_ticket_has_all_agent_steps_and_auto_resolves():
     ]
     assert result["decision"] == "auto_resolve"
     assert all("ms" in item for item in result["agent_trace"])
+    assert result["agent_trace"][0]["output"] == result["diagnosis"]
+    assert result["agent_trace"][3]["output"] == result["validation"]
 
 
 def test_security_ticket_escalates_with_team_and_reason():
@@ -80,3 +82,23 @@ def test_agent_metrics_report_runs_time_success_and_confidence():
     assert result["Diagnosis"] == {
         "runs": 2, "average_time_ms": 15.0, "success_rate": 0.5, "average_confidence": 0.7,
     }
+
+
+def test_retrieval_and_resolution_use_pipeline_stage_timings_independently():
+    ticket = {"subject": "VPN timeout", "description": "VPN timeout", "category": "VPN", "severity": "High"}
+    resolution = _resolution()
+    resolution["trace"] = [
+        {"step": "retrieve_articles", "time_ms": 7.25},
+        {"step": "generate_response", "time_ms": 18.5},
+    ]
+    with patch("agents.orchestrator._timed_resolution", return_value=resolution):
+        result = run(ticket)
+    assert result["agent_trace"][1]["ms"] == 7.25
+    assert result["agent_trace"][2]["ms"] == 18.5
+
+
+def test_retrieval_error_mode_fits_agent_run_database_field():
+    with patch("rag.pipeline.resolve", side_effect=RuntimeError("Pinecone unavailable")):
+        result = _safe_resolution({"subject": "VPN", "description": "timeout", "category": "VPN"}, {})
+    assert result["mode"] == "retrieval_error"
+    assert len(result["mode"]) <= 20
